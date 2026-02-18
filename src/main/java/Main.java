@@ -1,69 +1,39 @@
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-
 public class Main {
     public static void main(String[] args) {
+        System.out.println("ТЕСТИРОВАНИЕ PERMANENTASSIGNMENT\n");
 
-        System.out.println("1. Создание через конструктор:");
-        AssignmentMetadata meta1 = new AssignmentMetadata(
-                "admin",
-                "2026-01-15 10:30",
-                "Initial setup"
-        );
-        System.out.println(meta1.format());
-        System.out.println("  assignedBy: " + meta1.assignedBy());
-        System.out.println("  assignedAt: " + meta1.assignedAt());
-        System.out.println("  reason: " + meta1.reason());
+        User user = User.create("john_doe", "John Doe", "john@example.com");
+        System.out.println("User: " + user.format());
+
+        Permission readUsers = new Permission("READ", "users", "Can read users");
+        Permission writeUsers = new Permission("WRITE", "users", "Can write users");
+
+        Role role = new Role("Editor", "Can edit content");
+        role.addPermission(readUsers);
+        role.addPermission(writeUsers);
+        System.out.println("Role: " + role.getName());
+
+        AssignmentMetadata metadata = AssignmentMetadata.now("admin", "Permanent assignment");
+        System.out.println("Metadata: " + metadata.format());
         System.out.println();
 
-        System.out.println("2. Создание через now():");
-        AssignmentMetadata meta2 = AssignmentMetadata.now("john_doe", "Project start");
-        System.out.println(meta2.format());
-        System.out.println("  Текущая дата/время установлена автоматически");
+        PermanentAssignment assignment = new PermanentAssignment(user, role, metadata);
+
+        System.out.println("assignmentId: " + assignment.assignmentId());
+        System.out.println("user: " + assignment.user().username());
+        System.out.println("role: " + assignment.role().getName());
+        System.out.println("type: " + assignment.assignmentType());
+        System.out.println("isActive: " + assignment.isActive());
+        System.out.println("isRevoked: " + assignment.isRevoked());
         System.out.println();
 
-
-        System.out.println("3. Без причины:");
-        AssignmentMetadata meta3 = AssignmentMetadata.now("manager", null);
-        System.out.println(meta3.format());
-        System.out.println("  reason: " + meta3.reason() );
+        System.out.println("Summary: " + assignment.summary());
         System.out.println();
 
-
-        System.out.println("4. Пустая причина:");
-        AssignmentMetadata meta4 = new AssignmentMetadata(
-                "admin",
-                "2026-02-20 15:45",
-                ""
-        );
-        System.out.println(meta4.format());
-        System.out.println("  reason: " + meta4.reason());
-        System.out.println();
-
-
-        System.out.println("5. Ошибки валидации:");
-        try {
-            AssignmentMetadata m = new AssignmentMetadata("", "2024-01-01", "test");
-            System.out.println("Должно было упасть");
-        } catch (IllegalArgumentException e) {
-            System.out.println("assignedBy пустой: " + e.getMessage());
-        }
-
-        // Ошибка: assignedAt пустой
-        try {
-            AssignmentMetadata m = new AssignmentMetadata("admin", "", "test");
-            System.out.println("Должно было упасть");
-        } catch (IllegalArgumentException e) {
-            System.out.println("assignedAt пустой: " + e.getMessage());
-        }
-
-        // Ошибка: assignedBy = null
-        try {
-            AssignmentMetadata m = new AssignmentMetadata(null, "2024-01-01", "test");
-            System.out.println("Должно было упасть");
-        } catch (IllegalArgumentException e) {
-            System.out.println("assignedBy = null: " + e.getMessage());
-        }
-        System.out.println();
+        System.out.println("Отзыв назначения:");
+        assignment.revoke();
+        System.out.println("isActive: " + assignment.isActive());
+        System.out.println("isRevoked: " + assignment.isRevoked());
+        System.out.println("Summary: " + assignment.summary());
     }
 }

@@ -7,7 +7,7 @@ public abstract class AbstractRoleAssignment implements RoleAssignment {
     private final Role role;
     private final AssignmentMetadata metadata;
 
-   
+
     public AbstractRoleAssignment(User user, Role role, AssignmentMetadata metadata) {
         this.assignmentId = "assign_" + UUID.randomUUID().toString();
         this.user = user;
@@ -50,9 +50,9 @@ public abstract class AbstractRoleAssignment implements RoleAssignment {
 
         String reasonPart = (reason == null || reason.isBlank())
                 ? ""
-                : " Reason: " + reason;
+                : "\nReason: " + reason;
 
-        return String.format("[%s] %s assigned to %s by %s at %s%s Status: %s",
+        return String.format("[%s] %s assigned to %s by %s at %s%s\nStatus: %s",
                 type,
                 role().getName(),
                 user().username(),

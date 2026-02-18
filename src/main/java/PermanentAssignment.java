@@ -1,0 +1,39 @@
+public class PermanentAssignment extends AbstractRoleAssignment {
+
+    private boolean revoked;
+
+    public PermanentAssignment(User user, Role role, AssignmentMetadata metadata) {
+        super(user, role, metadata);
+        this.revoked = false; // по умолчанию не отозвано
+    }
+
+
+    @Override
+    public boolean isActive() {
+        return !revoked;
+    }
+
+    @Override
+    public String assignmentType() {
+        return "PERMANENT";
+    }
+
+    public void revoke() {
+        this.revoked = true;
+    }
+
+
+    public boolean isRevoked() {
+        return revoked;
+    }
+
+
+    @Override
+    public String summary() {
+        String baseSummary = super.summary();
+        if (revoked) {
+            return baseSummary + " (REVOKED)";
+        }
+        return baseSummary;
+    }
+}
