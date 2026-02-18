@@ -29,7 +29,7 @@ public record Permission(String name, String resource, String description) {
     public boolean matches(String namePattern, String resourcePattern) {
         boolean nameMatches;
         if (namePattern == null || namePattern.isBlank()) {
-            nameMatches = true; 
+            nameMatches = true;
         } else {
             nameMatches = this.name.contains(namePattern.toUpperCase());
         }
