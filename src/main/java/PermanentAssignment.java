@@ -4,7 +4,7 @@ public class PermanentAssignment extends AbstractRoleAssignment {
 
     public PermanentAssignment(User user, Role role, AssignmentMetadata metadata) {
         super(user, role, metadata);
-        this.revoked = false; // по умолчанию не отозвано
+        this.revoked = false;
     }
 
 

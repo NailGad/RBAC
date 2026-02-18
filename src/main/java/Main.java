@@ -1,6 +1,5 @@
 public class Main {
     public static void main(String[] args) {
-        System.out.println("ТЕСТИРОВАНИЕ PERMANENTASSIGNMENT\n");
 
         User user = User.create("john_doe", "John Doe", "john@example.com");
         System.out.println("User: " + user.format());
@@ -13,27 +12,47 @@ public class Main {
         role.addPermission(writeUsers);
         System.out.println("Role: " + role.getName());
 
-        AssignmentMetadata metadata = AssignmentMetadata.now("admin", "Permanent assignment");
+        AssignmentMetadata metadata = AssignmentMetadata.now("admin", "Temporary access");
         System.out.println("Metadata: " + metadata.format());
         System.out.println();
 
-        PermanentAssignment assignment = new PermanentAssignment(user, role, metadata);
+        String futureDate = "2025-12-31 23:59";
+        TemporaryAssignment assignment = new TemporaryAssignment(
+                user, role, metadata, futureDate, true);
 
         System.out.println("assignmentId: " + assignment.assignmentId());
-        System.out.println("user: " + assignment.user().username());
-        System.out.println("role: " + assignment.role().getName());
         System.out.println("type: " + assignment.assignmentType());
+        System.out.println("expiresAt: " + assignment.getExpiresAt());
+        System.out.println("autoRenew: " + assignment.isAutoRenew());
+        System.out.println("isExpired: " + assignment.isExpired());
         System.out.println("isActive: " + assignment.isActive());
-        System.out.println("isRevoked: " + assignment.isRevoked());
+        System.out.println("timeRemaining: " + assignment.getTimeRemaining());
         System.out.println();
 
-        System.out.println("Summary: " + assignment.summary());
+        System.out.println("SUMMARY:");
+        System.out.println(assignment.summary());
         System.out.println();
 
-        System.out.println("Отзыв назначения:");
-        assignment.revoke();
-        System.out.println("isActive: " + assignment.isActive());
-        System.out.println("isRevoked: " + assignment.isRevoked());
-        System.out.println("Summary: " + assignment.summary());
+        System.out.println("Продление назначения:");
+        String newDate = "2026-12-31 23:59";
+        assignment.extend(newDate);
+        System.out.println("new expiresAt: " + assignment.getExpiresAt());
+        System.out.println("timeRemaining: " + assignment.getTimeRemaining());
+        System.out.println();
+
+        assignment.setAutoRenew(false);
+        System.out.println("autoRenew: " + assignment.isAutoRenew());
+        System.out.println();
+
+        String pastDate = "2020-01-01 00:00";
+        TemporaryAssignment expiredAssignment = new TemporaryAssignment(
+                user, role, metadata, pastDate, false);
+
+        System.out.println("Истекшее назначение:");
+        System.out.println("expiresAt: " + expiredAssignment.getExpiresAt());
+        System.out.println("isExpired: " + expiredAssignment.isExpired());
+        System.out.println("isActive: " + expiredAssignment.isActive());
+        System.out.println("timeRemaining: " + expiredAssignment.getTimeRemaining());
+        System.out.println(expiredAssignment.summary());
     }
 }
