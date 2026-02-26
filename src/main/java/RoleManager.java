@@ -1,0 +1,159 @@
+import java.util.*;
+
+public class RoleManager implements Repository<Role> {
+
+    private final Map<String, Role> rolesById = new HashMap<>();
+    private final Map<String, Role> rolesByName = new HashMap<>();
+
+    public RoleManager() {
+    }
+
+    @Override
+    public void add(Role role) {
+        if (role == null) {
+            throw new IllegalArgumentException("Role cannot be null");
+        }
+
+        String roleName = role.getName();
+        if (rolesByName.containsKey(roleName)) {
+            throw new IllegalArgumentException("Role with name '" + roleName + "' already exists");
+        }
+
+        rolesById.put(role.getId(), role);
+        rolesByName.put(roleName, role);
+    }
+
+    @Override
+    public boolean remove(Role role) {
+        if (role == null) {
+            return false;
+        }
+
+        boolean removed = rolesById.remove(role.getId()) != null;
+        if (removed) {
+            rolesByName.remove(role.getName());
+        }
+        return removed;
+    }
+
+    @Override
+    public Optional<Role> findById(String id) {
+        if (id == null || id.isBlank()) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(rolesById.get(id));
+    }
+
+    @Override
+    public List<Role> findAll() {
+        return new ArrayList<>(rolesById.values());
+    }
+
+    @Override
+    public int count() {
+        return rolesById.size();
+    }
+
+    @Override
+    public void clear() {
+        rolesById.clear();
+        rolesByName.clear();
+    }
+
+    public Optional<Role> findByName(String name) {
+        if (name == null || name.isBlank()) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(rolesByName.get(name));
+    }
+
+    public List<Role> findByFilter(RoleFilter filter) {
+        if (filter == null) {
+            return findAll();
+        }
+
+        List<Role> result = new ArrayList<>();
+        for (Role role : rolesById.values()) {
+            if (filter.test(role)) {
+                result.add(role);
+            }
+        }
+        return result;
+    }
+
+    public List<Role> findAll(RoleFilter filter, Comparator<Role> sorter) {
+        List<Role> result = findByFilter(filter);
+        if (sorter != null) {
+            result.sort(sorter);
+        }
+        return result;
+    }
+
+    public boolean exists(String name) {
+        return name != null && rolesByName.containsKey(name);
+    }
+
+    public void addPermissionToRole(String roleName, Permission permission) {
+        if (roleName == null || roleName.isBlank()) {
+            throw new IllegalArgumentException("Role name cannot be empty");
+        }
+        if (permission == null) {
+            throw new IllegalArgumentException("Permission cannot be null");
+        }
+
+        Role role = rolesByName.get(roleName);
+        if (role == null) {
+            throw new IllegalArgumentException("Role with name '" + roleName + "' not found");
+        }
+
+        role.addPermission(permission);
+    }
+
+    public void removePermissionFromRole(String roleName, Permission permission) {
+        if (roleName == null || roleName.isBlank()) {
+            throw new IllegalArgumentException("Role name cannot be empty");
+        }
+        if (permission == null) {
+            throw new IllegalArgumentException("Permission cannot be null");
+        }
+
+        Role role = rolesByName.get(roleName);
+        if (role == null) {
+            throw new IllegalArgumentException("Role with name '" + roleName + "' not found");
+        }
+
+        role.removePermission(permission);
+    }
+
+    public List<Role> findRolesWithPermission(String permissionName, String resource) {
+        if (permissionName == null || resource == null) {
+            return new ArrayList<>();
+        }
+
+        List<Role> result = new ArrayList<>();
+        for (Role role : rolesById.values()) {
+            if (role.hasPermission(permissionName, resource)) {
+                result.add(role);
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        RoleManager that = (RoleManager) o;
+        return rolesById.equals(that.rolesById);
+    }
+
+    @Override
+    public int hashCode() {
+        return rolesById.hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return String.format("RoleManager{roles=%d}", rolesById.size());
+    }
+}
