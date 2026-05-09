@@ -802,6 +802,29 @@ public class CommandRegistry {
             System.out.println(sys.generateStatistics());
         });
 
+        parser.registerCommand("scheduler-start", "Start periodic maintenance (expired temp roles + stats log), interval in seconds", (scanner, sys) -> {
+            String secRaw = ConsoleUtils.promptString(scanner, "Interval in seconds (e.g. 60): ", true);
+            try {
+                long sec = Long.parseLong(secRaw.trim());
+                sys.startMaintenanceScheduler(sec);
+                System.out.println("Maintenance scheduler started every " + sec + " s. Audit log: SCHEDULER_STATS.");
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid number.");
+            } catch (IllegalArgumentException e) {
+                System.out.println("Error: " + e.getMessage());
+            }
+        });
+
+        parser.registerCommand("scheduler-stop", "Stop periodic maintenance scheduler", (scanner, sys) -> {
+            sys.stopMaintenanceScheduler();
+            System.out.println("Maintenance scheduler stopped.");
+        });
+
+        parser.registerCommand("scheduler-run-once", "Run maintenance tick once (now)", (scanner, sys) -> {
+            sys.runMaintenanceTick();
+            System.out.println("Maintenance tick completed (see audit log).");
+        });
+
         parser.registerCommand("clear", "Clear the screen", (scanner, sys) -> {
             System.out.print("\033[H\033[2J");
             System.out.flush();

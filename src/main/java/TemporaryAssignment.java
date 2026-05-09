@@ -4,8 +4,15 @@ import java.time.temporal.ChronoUnit;
 
 public class TemporaryAssignment extends AbstractRoleAssignment {
 
+<<<<<<< HEAD
     private volatile String expiresAt;
     private volatile boolean autoRenew;
+=======
+    private String expiresAt;
+    private boolean autoRenew;
+    /** Явно помечено планировщиком как неактивное после истечения срока (короткая фиксация состояния). */
+    private volatile boolean inactiveByScheduler;
+>>>>>>> feature/schedule-tasks
 
     private static final DateTimeFormatter FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
@@ -22,12 +29,13 @@ public class TemporaryAssignment extends AbstractRoleAssignment {
 
         this.expiresAt = expiresAt;
         this.autoRenew = autoRenew;
+        this.inactiveByScheduler = false;
     }
 
 
     @Override
     public boolean isActive() {
-        return !isExpired();
+        return !inactiveByScheduler && !isExpired();
     }
 
     @Override
@@ -46,6 +54,24 @@ public class TemporaryAssignment extends AbstractRoleAssignment {
             throw new IllegalArgumentException("New expiration date должен быть в формате yyyy-MM-dd HH:mm");
         }
         this.expiresAt = normalized;
+        this.inactiveByScheduler = false;
+    }
+
+    /**
+     * Если срок истёк, помечает назначение неактивным с точки зрения планировщика.
+     *
+     * @return {@code true}, если пометка выполнена в этом вызове
+     */
+    public boolean markInactiveBySchedulerIfExpired() {
+        if (!isExpired() || inactiveByScheduler) {
+            return false;
+        }
+        inactiveByScheduler = true;
+        return true;
+    }
+
+    public boolean isInactiveByScheduler() {
+        return inactiveByScheduler;
     }
 
     public String getTimeRemaining() {
@@ -90,6 +116,9 @@ public class TemporaryAssignment extends AbstractRoleAssignment {
         String baseSummary = super.summary();
         String autoRenewText = autoRenew ? "yes" : "no";
         String status = isExpired() ? "EXPIRED" : "ACTIVE";
+        if (inactiveByScheduler) {
+            status = status + " (SCHEDULER)";
+        }
 
         return String.format("%s\nExpires: %s (Remaining: %s) Auto-renew: %s Status: %s",
                 baseSummary,

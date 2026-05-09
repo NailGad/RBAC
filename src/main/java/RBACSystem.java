@@ -1,8 +1,16 @@
+<<<<<<< HEAD
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+=======
+>>>>>>> feature/schedule-tasks
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public class RBACSystem {
@@ -10,7 +18,12 @@ public class RBACSystem {
     private final RoleManager roleManager;
     private final AssignmentManager assignmentManager;
     private final AuditLog auditLog;
+<<<<<<< HEAD
     private final BackgroundExecutor backgroundExecutor;
+=======
+    private final ScheduledExecutorService maintenanceScheduler;
+    private final AtomicReference<ScheduledFuture<?>> maintenanceTask = new AtomicReference<>();
+>>>>>>> feature/schedule-tasks
     private String currentUser;
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
@@ -21,7 +34,15 @@ public class RBACSystem {
         this.roleManager = new RoleManager();
         this.assignmentManager = new AssignmentManager(userManager, roleManager);
         this.auditLog = new AuditLog();
+<<<<<<< HEAD
         this.backgroundExecutor = new BackgroundExecutor();
+=======
+        this.maintenanceScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "rbac-maintenance");
+            t.setDaemon(true);
+            return t;
+        });
+>>>>>>> feature/schedule-tasks
         this.currentUser = "system";
     }
 
@@ -41,6 +62,7 @@ public class RBACSystem {
         return auditLog;
     }
 
+<<<<<<< HEAD
     public BackgroundExecutor getBackgroundExecutor() {
         return backgroundExecutor;
     }
@@ -130,6 +152,60 @@ public class RBACSystem {
         try {
             auditLog.shutdownAndAwait();
         } catch (InterruptedException e) {
+=======
+    /**
+     * Периодическая задача: истёкшие временные назначения и запись краткой статистики в audit log.
+     */
+    public void startMaintenanceScheduler(long periodSeconds) {
+        if (periodSeconds <= 0) {
+            throw new IllegalArgumentException("Period must be positive (seconds)");
+        }
+        stopMaintenanceScheduler();
+        ScheduledFuture<?> future = maintenanceScheduler.scheduleAtFixedRate(
+                this::runMaintenanceTick,
+                periodSeconds,
+                periodSeconds,
+                TimeUnit.SECONDS);
+        maintenanceTask.set(future);
+    }
+
+    public void stopMaintenanceScheduler() {
+        ScheduledFuture<?> f = maintenanceTask.getAndSet(null);
+        if (f != null) {
+            f.cancel(false);
+        }
+    }
+
+    /**
+     * Один проход обслуживания (удобно для тестов).
+     */
+    public void runMaintenanceTick() {
+        try {
+            int deactivated = assignmentManager.deactivateExpiredTemporaryByScheduler();
+            int activeAssignments = assignmentManager.getActiveAssignments().size();
+            String details = String.format(
+                    "deactivated_temp=%d users=%d roles=%d assignments=%d active_assignments=%d",
+                    deactivated,
+                    userManager.count(),
+                    roleManager.count(),
+                    assignmentManager.count(),
+                    activeAssignments);
+            auditLog.log("SCHEDULER_STATS", "system", "scheduler", details);
+        } catch (RuntimeException e) {
+            System.err.println("[maintenance] tick failed: " + e.getMessage());
+        }
+    }
+
+    public void shutdown() {
+        stopMaintenanceScheduler();
+        maintenanceScheduler.shutdown();
+        try {
+            if (!maintenanceScheduler.awaitTermination(3, TimeUnit.SECONDS)) {
+                maintenanceScheduler.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            maintenanceScheduler.shutdownNow();
+>>>>>>> feature/schedule-tasks
             Thread.currentThread().interrupt();
         }
     }
