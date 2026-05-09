@@ -370,8 +370,9 @@ public class CommandRegistry {
             try {
                 int index = Integer.parseInt(scanner.nextLine().trim()) - 1;
                 if (index >= 0 && index < permList.size()) {
-                    sys.getRoleManager().removePermissionFromRole(roleName, permList.get(index));
-                    System.out.println("Permission removed.");
+                    Permission toRemove = permList.get(index);
+                    sys.getRoleManager().removePermissionFromRole(roleName, toRemove);
+                    System.out.println("Permission removed successfully.");
                 } else {
                     System.out.println("Invalid number.");
                 }

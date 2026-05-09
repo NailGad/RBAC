@@ -93,10 +93,12 @@ public class RBACSystem {
         sb.append(String.format("Expired/revoked assignments: %d\n", expiredAssignments.size()));
 
         if (userCount > 0) {
-            double avgRolesPerUser = (double) assignmentManager.findAll().stream()
+            long usersWithRoles = assignmentManager.findAll().stream()
                     .filter(RoleAssignment::isActive)
-                    .collect(Collectors.groupingBy(RoleAssignment::user))
-                    .size() / (double) userCount;
+                    .map(RoleAssignment::user)
+                    .distinct()
+                    .count();
+            double avgRolesPerUser = (double) usersWithRoles / (double) userCount;
             sb.append(String.format("Average roles per user: %.2f\n", avgRolesPerUser));
         } else {
             sb.append("Average roles per user: 0.00\n");
