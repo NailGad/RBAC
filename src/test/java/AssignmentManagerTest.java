@@ -287,6 +287,28 @@ public class AssignmentManagerTest {
     }
 
     @Test
+    void testFindByFilterParallel_matchesSequential() {
+        AssignmentMetadata meta1 = AssignmentMetadata.now("admin", "Test1");
+        AssignmentMetadata meta2 = AssignmentMetadata.now("manager", "Test2");
+
+        assignmentManager.add(new PermanentAssignment(user1, role1, meta1));
+        assignmentManager.add(new PermanentAssignment(user2, role2, meta2));
+
+        AssignmentFilter filter = AssignmentFilters.assignedBy("admin");
+        List<RoleAssignment> seq = assignmentManager.findByFilter(filter);
+        List<RoleAssignment> par = assignmentManager.findByFilterParallel(filter);
+        seq.sort(AssignmentSorters.byUsername());
+        par.sort(AssignmentSorters.byUsername());
+        assertEquals(seq, par);
+
+        List<RoleAssignment> allSeq = assignmentManager.findByFilter(null);
+        List<RoleAssignment> allPar = assignmentManager.findByFilterParallel(null);
+        allSeq.sort(AssignmentSorters.byUsername().thenComparing(a -> a.assignmentId()));
+        allPar.sort(AssignmentSorters.byUsername().thenComparing(a -> a.assignmentId()));
+        assertEquals(allSeq, allPar);
+    }
+
+    @Test
     void testFindAllWithSorter() {
         AssignmentMetadata meta1 = AssignmentMetadata.now("admin", "First");
         AssignmentMetadata meta2 = AssignmentMetadata.now("admin", "Second");

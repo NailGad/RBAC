@@ -1,5 +1,7 @@
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+import java.util.stream.Collectors;
 
 public class UserManager implements Repository<User> {
 
@@ -77,6 +79,15 @@ public class UserManager implements Repository<User> {
             }
         }
         return result;
+    }
+
+    public List<User> findByFilterParallel(UserFilter filter) {
+        if (filter == null) {
+            return findAll();
+        }
+        return usersByUsername.values().parallelStream()
+                .filter(filter::test)
+                .collect(Collectors.toList());
     }
 
     public List<User> findAll(UserFilter filter, Comparator<User> sorter) {

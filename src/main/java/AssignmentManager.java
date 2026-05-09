@@ -1,5 +1,7 @@
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+import java.util.stream.Collectors;
 
 public class AssignmentManager implements Repository<RoleAssignment> {
 
@@ -119,6 +121,15 @@ public class AssignmentManager implements Repository<RoleAssignment> {
             }
         }
         return result;
+    }
+
+    public List<RoleAssignment> findByFilterParallel(AssignmentFilter filter) {
+        if (filter == null) {
+            return findAll();
+        }
+        return assignmentsById.values().parallelStream()
+                .filter(filter::test)
+                .collect(Collectors.toList());
     }
 
     public List<RoleAssignment> findAll(AssignmentFilter filter, Comparator<RoleAssignment> sorter) {

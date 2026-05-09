@@ -2,6 +2,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class ReportGenerator {
 
@@ -22,20 +23,11 @@ public class ReportGenerator {
             return sb.toString();
         }
 
-        for (User u : users) {
-            List<RoleAssignment> assignments = assignmentManager.findByUser(u);
-            List<String> activeRoles = new ArrayList<>();
-            for (RoleAssignment a : assignments) {
-                if (a.isActive()) {
-                    activeRoles.add(a.role().getName());
-                }
-            }
-            activeRoles.sort(String.CASE_INSENSITIVE_ORDER);
-
-            sb.append(String.format("- %s | %s | %s%n", u.username(), u.fullName(), u.email()));
-            sb.append(String.format("  Roles (%d): %s%n",
-                    activeRoles.size(),
-                    activeRoles.isEmpty() ? "-" : String.join(", ", activeRoles)));
+        List<String> userBlocks = users.parallelStream()
+                .map(u -> formatUserReportBlock(u, assignmentManager))
+                .collect(Collectors.toList());
+        for (String block : userBlocks) {
+            sb.append(block);
         }
 
         return sb.toString();
@@ -87,12 +79,10 @@ public class ReportGenerator {
         List<User> users = userManager.findAll();
         users.sort(Comparator.comparing(User::username, String.CASE_INSENSITIVE_ORDER));
 
-        SortedSet<String> resources = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-        for (User u : users) {
-            for (Permission p : assignmentManager.getUserPermissions(u)) {
-                resources.add(p.resource());
-            }
-        }
+        SortedSet<String> resources = users.parallelStream()
+                .flatMap(u -> assignmentManager.getUserPermissions(u).stream())
+                .map(Permission::resource)
+                .collect(Collectors.toCollection(() -> new TreeSet<>(String.CASE_INSENSITIVE_ORDER)));
 
         StringBuilder sb = new StringBuilder();
         sb.append("=== PERMISSION MATRIX (users x resources) ===\n");
@@ -116,23 +106,51 @@ public class ReportGenerator {
         sb.append('\n');
         sb.append("-".repeat(22 + resourceList.size() * 22)).append('\n');
 
-        for (User u : users) {
-            Map<String, SortedSet<String>> permsByRes = new HashMap<>();
-            for (Permission p : assignmentManager.getUserPermissions(u)) {
-                permsByRes.computeIfAbsent(p.resource(), k -> new TreeSet<>(String.CASE_INSENSITIVE_ORDER))
-                        .add(p.name());
-            }
-
-            sb.append(String.format("%-20s", u.username()));
-            for (String res : resourceList) {
-                SortedSet<String> perms = permsByRes.get(res);
-                String cell = (perms == null || perms.isEmpty()) ? "-" : String.join("/", perms);
-                sb.append(String.format(" | %-18s", truncate(cell, 18)));
-            }
-            sb.append('\n');
+        List<String> matrixRows = users.parallelStream()
+                .map(u -> formatPermissionMatrixRow(u, resourceList, assignmentManager))
+                .collect(Collectors.toList());
+        for (String row : matrixRows) {
+            sb.append(row);
         }
 
         return sb.toString();
+    }
+
+    private static String formatUserReportBlock(User u, AssignmentManager assignmentManager) {
+        List<RoleAssignment> assignments = assignmentManager.findByUser(u);
+        List<String> activeRoles = new ArrayList<>();
+        for (RoleAssignment a : assignments) {
+            if (a.isActive()) {
+                activeRoles.add(a.role().getName());
+            }
+        }
+        activeRoles.sort(String.CASE_INSENSITIVE_ORDER);
+
+        StringBuilder block = new StringBuilder();
+        block.append(String.format("- %s | %s | %s%n", u.username(), u.fullName(), u.email()));
+        block.append(String.format("  Roles (%d): %s%n",
+                activeRoles.size(),
+                activeRoles.isEmpty() ? "-" : String.join(", ", activeRoles)));
+        return block.toString();
+    }
+
+    private static String formatPermissionMatrixRow(User u, List<String> resourceList,
+                                                    AssignmentManager assignmentManager) {
+        Map<String, SortedSet<String>> permsByRes = new HashMap<>();
+        for (Permission p : assignmentManager.getUserPermissions(u)) {
+            permsByRes.computeIfAbsent(p.resource(), k -> new TreeSet<>(String.CASE_INSENSITIVE_ORDER))
+                    .add(p.name());
+        }
+
+        StringBuilder row = new StringBuilder();
+        row.append(String.format("%-20s", u.username()));
+        for (String res : resourceList) {
+            SortedSet<String> perms = permsByRes.get(res);
+            String cell = (perms == null || perms.isEmpty()) ? "-" : String.join("/", perms);
+            row.append(String.format(" | %-18s", truncate(cell, 18)));
+        }
+        row.append('\n');
+        return row.toString();
     }
 
     public void exportToFile(String report, String filename) {

@@ -1,4 +1,5 @@
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class RoleManager implements Repository<Role> {
 
@@ -108,6 +109,19 @@ public class RoleManager implements Repository<Role> {
             result.sort(sorter);
         }
         return result;
+    }
+
+    public List<Role> findByFilterParallel(RoleFilter filter) {
+        List<Role> snapshot;
+        synchronized (lock) {
+            snapshot = new ArrayList<>(rolesById.values());
+        }
+        if (filter == null) {
+            return snapshot;
+        }
+        return snapshot.parallelStream()
+                .filter(filter::test)
+                .collect(Collectors.toList());
     }
 
     public boolean exists(String name) {
