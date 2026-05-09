@@ -2,9 +2,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Пул потоков для фоновых задач (отчёты, сохранение).
- */
 public final class BackgroundExecutor implements AutoCloseable {
 
     private final ExecutorService executor;

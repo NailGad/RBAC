@@ -52,13 +52,10 @@ public class CommandRegistryTest {
         assertTrue(output.contains("help"));
         assertTrue(output.contains("stats"));
         assertTrue(output.contains("exit"));
-<<<<<<< HEAD
         assertTrue(output.contains("report-users-async"));
         assertTrue(output.contains("save-async"));
-=======
         assertTrue(output.contains("scheduler-start"));
         assertTrue(output.contains("scheduler-stop"));
->>>>>>> feature/schedule-tasks
     }
 
     @Test

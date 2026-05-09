@@ -4,15 +4,9 @@ import java.time.temporal.ChronoUnit;
 
 public class TemporaryAssignment extends AbstractRoleAssignment {
 
-<<<<<<< HEAD
     private volatile String expiresAt;
     private volatile boolean autoRenew;
-=======
-    private String expiresAt;
-    private boolean autoRenew;
-    /** Явно помечено планировщиком как неактивное после истечения срока (короткая фиксация состояния). */
     private volatile boolean inactiveByScheduler;
->>>>>>> feature/schedule-tasks
 
     private static final DateTimeFormatter FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
@@ -57,11 +51,6 @@ public class TemporaryAssignment extends AbstractRoleAssignment {
         this.inactiveByScheduler = false;
     }
 
-    /**
-     * Если срок истёк, помечает назначение неактивным с точки зрения планировщика.
-     *
-     * @return {@code true}, если пометка выполнена в этом вызове
-     */
     public boolean markInactiveBySchedulerIfExpired() {
         if (!isExpired() || inactiveByScheduler) {
             return false;

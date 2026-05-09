@@ -218,10 +218,6 @@ public class AssignmentManager implements Repository<RoleAssignment> {
         }
     }
 
-    /**
-     * Помечает истёкшие временные назначения как неактивные (планировщик).
-     * Снимок списка делается за один проход по копии — без длительной блокировки карты.
-     */
     public int deactivateExpiredTemporaryByScheduler() {
         int marked = 0;
         for (RoleAssignment a : new ArrayList<>(assignmentsById.values())) {

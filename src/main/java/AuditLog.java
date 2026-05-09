@@ -82,9 +82,6 @@ public class AuditLog {
         }
     }
 
-    /**
-     * Дождаться, пока все записанные на момент вызова события попадут в список (для тестов).
-     */
     public void awaitProcessed() throws InterruptedException {
         int target = enqueued.get();
         long deadline = System.currentTimeMillis() + 10_000;

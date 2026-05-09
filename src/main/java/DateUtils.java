@@ -100,7 +100,6 @@ public final class DateUtils {
             return null;
         }
 
-        // allow existing project format for temporary assignments: "yyyy-MM-dd HH:mm"
         if (v.matches("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}$")) {
             try {
                 return LocalDateTime.parse(v, DATE_TIME_FORMATTER);
@@ -109,7 +108,6 @@ public final class DateUtils {
             }
         }
 
-        // allow seconds for getCurrentDateTime() output
         if (v.matches("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$")) {
             try {
                 return LocalDateTime.parse(v, DATE_TIME_SECONDS_FORMATTER);

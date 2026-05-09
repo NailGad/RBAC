@@ -1,9 +1,6 @@
-<<<<<<< HEAD
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-=======
->>>>>>> feature/schedule-tasks
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.Executors;
@@ -18,12 +15,9 @@ public class RBACSystem {
     private final RoleManager roleManager;
     private final AssignmentManager assignmentManager;
     private final AuditLog auditLog;
-<<<<<<< HEAD
     private final BackgroundExecutor backgroundExecutor;
-=======
     private final ScheduledExecutorService maintenanceScheduler;
     private final AtomicReference<ScheduledFuture<?>> maintenanceTask = new AtomicReference<>();
->>>>>>> feature/schedule-tasks
     private String currentUser;
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
@@ -34,15 +28,12 @@ public class RBACSystem {
         this.roleManager = new RoleManager();
         this.assignmentManager = new AssignmentManager(userManager, roleManager);
         this.auditLog = new AuditLog();
-<<<<<<< HEAD
         this.backgroundExecutor = new BackgroundExecutor();
-=======
         this.maintenanceScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
             Thread t = new Thread(r, "rbac-maintenance");
             t.setDaemon(true);
             return t;
         });
->>>>>>> feature/schedule-tasks
         this.currentUser = "system";
     }
 
@@ -62,14 +53,10 @@ public class RBACSystem {
         return auditLog;
     }
 
-<<<<<<< HEAD
     public BackgroundExecutor getBackgroundExecutor() {
         return backgroundExecutor;
     }
 
-    /**
-     * Экспорт пользователей, ролей и назначений в текстовый файл (снимок состояния).
-     */
     public void saveDataToFile(String filename) {
         ValidationUtils.requireNonEmpty(filename, "filename");
         try {
@@ -147,15 +134,6 @@ public class RBACSystem {
                 .replace("\r", " ");
     }
 
-    public void shutdown() {
-        backgroundExecutor.close();
-        try {
-            auditLog.shutdownAndAwait();
-        } catch (InterruptedException e) {
-=======
-    /**
-     * Периодическая задача: истёкшие временные назначения и запись краткой статистики в audit log.
-     */
     public void startMaintenanceScheduler(long periodSeconds) {
         if (periodSeconds <= 0) {
             throw new IllegalArgumentException("Period must be positive (seconds)");
@@ -176,9 +154,6 @@ public class RBACSystem {
         }
     }
 
-    /**
-     * Один проход обслуживания (удобно для тестов).
-     */
     public void runMaintenanceTick() {
         try {
             int deactivated = assignmentManager.deactivateExpiredTemporaryByScheduler();
@@ -205,7 +180,12 @@ public class RBACSystem {
             }
         } catch (InterruptedException e) {
             maintenanceScheduler.shutdownNow();
->>>>>>> feature/schedule-tasks
+            Thread.currentThread().interrupt();
+        }
+        backgroundExecutor.close();
+        try {
+            auditLog.shutdownAndAwait();
+        } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
     }

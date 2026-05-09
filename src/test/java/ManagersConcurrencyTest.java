@@ -59,7 +59,7 @@ public class ManagersConcurrencyTest {
         } finally {
             shutdownExecutor(executor);
         }
-        assertEquals(THREADS * perThread + 1, userManager.count()); // + seed user
+        assertEquals(THREADS * perThread + 1, userManager.count());
     }
 
     @Test
@@ -91,7 +91,7 @@ public class ManagersConcurrencyTest {
         }
         assertEquals(1, successes.get());
         assertEquals(THREADS - 1, duplicateFailures.get());
-        assertEquals(2, userManager.count()); // john_doe + dup_user
+        assertEquals(2, userManager.count());
     }
 
     @Test
@@ -137,7 +137,6 @@ public class ManagersConcurrencyTest {
                         assignmentManager.add(new PermanentAssignment(user1, role1, meta));
                         accepted.incrementAndGet();
                     } catch (IllegalStateException ex) {
-                        // duplicate active user+role
                     }
                     return null;
                 }));
