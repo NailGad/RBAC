@@ -1,9 +1,11 @@
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class AssignmentManager implements Repository<RoleAssignment> {
 
-    private final Map<String, RoleAssignment> assignmentsById = new HashMap<>();
+    private final Object assignmentLock = new Object();
+    private final Map<String, RoleAssignment> assignmentsById = new ConcurrentHashMap<>();
     private final UserManager userManager;
     private final RoleManager roleManager;
 
@@ -21,19 +23,21 @@ public class AssignmentManager implements Repository<RoleAssignment> {
         User user = assignment.user();
         Role role = assignment.role();
 
-        if (!userManager.exists(user.username())) {
-            throw new IllegalArgumentException("User '" + user.username() + "' does not exist");
-        }
+        synchronized (assignmentLock) {
+            if (!userManager.exists(user.username())) {
+                throw new IllegalArgumentException("User '" + user.username() + "' does not exist");
+            }
 
-        if (!roleManager.exists(role.getName())) {
-            throw new IllegalArgumentException("Role '" + role.getName() + "' does not exist");
-        }
+            if (!roleManager.exists(role.getName())) {
+                throw new IllegalArgumentException("Role '" + role.getName() + "' does not exist");
+            }
 
-        if (hasActiveAssignment(user, role)) {
-            throw new IllegalStateException("User already has active assignment for role '" + role.getName() + "'");
-        }
+            if (hasActiveAssignment(user, role)) {
+                throw new IllegalStateException("User already has active assignment for role '" + role.getName() + "'");
+            }
 
-        assignmentsById.put(assignment.assignmentId(), assignment);
+            assignmentsById.put(assignment.assignmentId(), assignment);
+        }
     }
 
     private boolean hasActiveAssignment(User user, Role role) {
@@ -118,6 +122,15 @@ public class AssignmentManager implements Repository<RoleAssignment> {
         return result;
     }
 
+    public List<RoleAssignment> findByFilterParallel(AssignmentFilter filter) {
+        if (filter == null) {
+            return findAll();
+        }
+        return assignmentsById.values().parallelStream()
+                .filter(filter::test)
+                .collect(Collectors.toList());
+    }
+
     public List<RoleAssignment> findAll(AssignmentFilter filter, Comparator<RoleAssignment> sorter) {
         List<RoleAssignment> result = findByFilter(filter);
         if (sorter != null) {
@@ -190,15 +203,17 @@ public class AssignmentManager implements Repository<RoleAssignment> {
     public void revokeAssignment(String assignmentId) {
         ValidationUtils.requireNonEmpty(assignmentId, "Assignment ID");
 
-        RoleAssignment assignment = assignmentsById.get(assignmentId);
-        if (assignment == null) {
-            throw new IllegalArgumentException("Assignment not found with id: " + assignmentId);
-        }
+        synchronized (assignmentLock) {
+            RoleAssignment assignment = assignmentsById.get(assignmentId);
+            if (assignment == null) {
+                throw new IllegalArgumentException("Assignment not found with id: " + assignmentId);
+            }
 
-        if (assignment instanceof PermanentAssignment) {
-            ((PermanentAssignment) assignment).revoke();
-        } else {
-            throw new IllegalArgumentException("Only permanent assignments can be revoked");
+            if (assignment instanceof PermanentAssignment) {
+                ((PermanentAssignment) assignment).revoke();
+            } else {
+                throw new IllegalArgumentException("Only permanent assignments can be revoked");
+            }
         }
     }
 
@@ -210,15 +225,17 @@ public class AssignmentManager implements Repository<RoleAssignment> {
             throw new IllegalArgumentException("New expiration date должен быть в формате yyyy-MM-dd HH:mm");
         }
 
-        RoleAssignment assignment = assignmentsById.get(assignmentId);
-        if (assignment == null) {
-            throw new IllegalArgumentException("Assignment not found with id: " + assignmentId);
-        }
+        synchronized (assignmentLock) {
+            RoleAssignment assignment = assignmentsById.get(assignmentId);
+            if (assignment == null) {
+                throw new IllegalArgumentException("Assignment not found with id: " + assignmentId);
+            }
 
-        if (assignment instanceof TemporaryAssignment) {
-            ((TemporaryAssignment) assignment).extend(newExpirationDate);
-        } else {
-            throw new IllegalArgumentException("Only temporary assignments can be extended");
+            if (assignment instanceof TemporaryAssignment) {
+                ((TemporaryAssignment) assignment).extend(newExpirationDate);
+            } else {
+                throw new IllegalArgumentException("Only temporary assignments can be extended");
+            }
         }
     }
 

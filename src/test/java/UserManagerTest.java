@@ -2,6 +2,7 @@ import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.*;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.IntStream;
 
 public class UserManagerTest {
 
@@ -149,6 +150,34 @@ public class UserManagerTest {
         List<User> result = userManager.findByFilter(filter);
         assertEquals(1, result.size());
         assertEquals("jane_smith", result.get(0).username());
+    }
+
+    @Test
+    void testFindByFilterParallel_matchesSequential() {
+        userManager.add(user1);
+        userManager.add(user2);
+        userManager.add(user3);
+
+        UserFilter filter = UserFilters.byEmailDomain("@example.com");
+        List<User> seq = userManager.findByFilter(filter);
+        List<User> par = userManager.findByFilterParallel(filter);
+        seq.sort(UserSorters.byUsername());
+        par.sort(UserSorters.byUsername());
+        assertEquals(seq, par);
+
+        List<User> allSeq = userManager.findByFilter(null);
+        List<User> allPar = userManager.findByFilterParallel(null);
+        allSeq.sort(UserSorters.byUsername());
+        allPar.sort(UserSorters.byUsername());
+        assertEquals(allSeq, allPar);
+    }
+
+    @Test
+    void testFindByFilterParallel_manyUsers() {
+        IntStream.range(0, 500).forEach(i ->
+                userManager.add(User.create("u" + i, "N", "u" + i + "@t.com")));
+        UserFilter filter = UserFilters.byUsername("u42");
+        assertEquals(userManager.findByFilter(filter), userManager.findByFilterParallel(filter));
     }
 
     @Test

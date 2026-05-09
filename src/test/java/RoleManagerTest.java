@@ -2,6 +2,7 @@ import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.*;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.IntStream;
 
 public class RoleManagerTest {
 
@@ -164,6 +165,37 @@ public class RoleManagerTest {
         RoleFilter filter = RoleFilters.byNameContains("Editor");
         List<Role> result = roleManager.findByFilter(filter);
         assertEquals(1, result.size());
+    }
+
+    @Test
+    void testFindByFilterParallel_matchesSequential() {
+        roleManager.add(adminRole);
+        roleManager.add(editorRole);
+        roleManager.add(viewerRole);
+
+        RoleFilter filter = RoleFilters.byNameContains("or");
+        List<Role> seq = roleManager.findByFilter(filter);
+        List<Role> par = roleManager.findByFilterParallel(filter);
+        seq.sort(RoleSorters.byName());
+        par.sort(RoleSorters.byName());
+        assertEquals(seq, par);
+
+        List<Role> allSeq = roleManager.findByFilter(null);
+        List<Role> allPar = roleManager.findByFilterParallel(null);
+        allSeq.sort(RoleSorters.byName());
+        allPar.sort(RoleSorters.byName());
+        assertEquals(allSeq, allPar);
+    }
+
+    @Test
+    void testFindByFilterParallel_manyRoles() {
+        IntStream.range(0, 200).forEach(i -> roleManager.add(new Role("ZRole" + i, "d")));
+        RoleFilter filter = RoleFilters.byNameContains("ZRole7");
+        List<Role> seq = roleManager.findByFilter(filter);
+        List<Role> par = roleManager.findByFilterParallel(filter);
+        seq.sort(RoleSorters.byName());
+        par.sort(RoleSorters.byName());
+        assertEquals(seq, par);
     }
 
     @Test
