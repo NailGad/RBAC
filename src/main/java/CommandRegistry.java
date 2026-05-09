@@ -731,6 +731,41 @@ public class CommandRegistry {
             }
         });
 
+        parser.registerCommand("report-users-async", "Report: users (generate in background thread)", (scanner, sys) -> {
+            sys.getBackgroundExecutor().execute(() -> {
+                try {
+                    ReportGenerator generator = new ReportGenerator();
+                    String report = generator.generateUserReport(sys.getUserManager(), sys.getAssignmentManager());
+                    synchronized (System.out) {
+                        System.out.println(report);
+                        System.out.println("[async] User report finished.");
+                    }
+                } catch (Exception e) {
+                    synchronized (System.err) {
+                        System.err.println("[async] User report failed: " + e.getMessage());
+                    }
+                }
+            });
+            System.out.println("User report generation started in the background.");
+        });
+
+        parser.registerCommand("save-async", "Save system data snapshot to file in background", (scanner, sys) -> {
+            String filename = ConsoleUtils.promptString(scanner, "Enter filename: ", true);
+            sys.getBackgroundExecutor().execute(() -> {
+                try {
+                    sys.saveDataToFile(filename);
+                    synchronized (System.out) {
+                        System.out.println("[async] Data saved to " + filename);
+                    }
+                } catch (Exception e) {
+                    synchronized (System.err) {
+                        System.err.println("[async] Save failed: " + e.getMessage());
+                    }
+                }
+            });
+            System.out.println("Data save started in the background.");
+        });
+
         parser.registerCommand("report-roles", "Report: roles with user counts", (scanner, sys) -> {
             ReportGenerator generator = new ReportGenerator();
             String report = generator.generateRoleReport(sys.getRoleManager(), sys.getAssignmentManager());
@@ -775,6 +810,7 @@ public class CommandRegistry {
         parser.registerCommand("exit", "Exit the program", (scanner, sys) -> {
             if (ConsoleUtils.promptYesNo(scanner, "Are you sure you want to exit? (y/n): ")) {
                 System.out.println("Goodbye!");
+                sys.shutdown();
                 System.exit(0);
             }
         });

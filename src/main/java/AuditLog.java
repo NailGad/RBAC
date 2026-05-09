@@ -7,6 +7,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class AuditLog {
 
@@ -22,11 +27,44 @@ public class AuditLog {
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private final List<AuditEntry> entries = new ArrayList<>();
+    private final BlockingQueue<Optional<AuditEntry>> inbound = new LinkedBlockingQueue<>();
+    private final AtomicInteger enqueued = new AtomicInteger();
+    private final AtomicInteger stored = new AtomicInteger();
+    private final AtomicBoolean shutdown = new AtomicBoolean();
+    private final Thread worker;
+
+    public AuditLog() {
+        worker = new Thread(this::consumeLoop, "audit-log-worker");
+        worker.setDaemon(true);
+        worker.start();
+    }
+
+    private void consumeLoop() {
+        try {
+            while (true) {
+                Optional<AuditEntry> next = inbound.take();
+                if (next.isEmpty()) {
+                    break;
+                }
+                AuditEntry e = next.get();
+                synchronized (entries) {
+                    entries.add(e);
+                }
+                stored.incrementAndGet();
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
 
     public void log(String action, String performer, String target, String details) {
         ValidationUtils.requireNonEmpty(action, "action");
         ValidationUtils.requireNonEmpty(performer, "performer");
         ValidationUtils.requireNonEmpty(target, "target");
+
+        if (shutdown.get()) {
+            throw new IllegalStateException("AuditLog is shut down");
+        }
 
         String ts = LocalDateTime.now().format(TS_FORMATTER);
         String normalizedAction = ValidationUtils.normalizeString(action).toUpperCase();
@@ -34,11 +72,41 @@ public class AuditLog {
         String normalizedTarget = ValidationUtils.normalizeString(target);
         String normalizedDetails = details == null ? "" : Objects.requireNonNullElse(ValidationUtils.normalizeString(details), "");
 
-        entries.add(new AuditEntry(ts, normalizedAction, normalizedPerformer, normalizedTarget, normalizedDetails));
+        AuditEntry entry = new AuditEntry(ts, normalizedAction, normalizedPerformer, normalizedTarget, normalizedDetails);
+        try {
+            inbound.put(Optional.of(entry));
+            enqueued.incrementAndGet();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while enqueueing audit entry", e);
+        }
+    }
+
+    /**
+     * Дождаться, пока все записанные на момент вызова события попадут в список (для тестов).
+     */
+    public void awaitProcessed() throws InterruptedException {
+        int target = enqueued.get();
+        long deadline = System.currentTimeMillis() + 10_000;
+        while (stored.get() < target && System.currentTimeMillis() < deadline) {
+            Thread.sleep(1);
+        }
+        if (stored.get() < target) {
+            throw new IllegalStateException("Timeout waiting for audit entries to be processed");
+        }
+    }
+
+    public void shutdownAndAwait() throws InterruptedException {
+        if (shutdown.compareAndSet(false, true)) {
+            inbound.put(Optional.empty());
+            worker.join(5000);
+        }
     }
 
     public List<AuditEntry> getAll() {
-        return Collections.unmodifiableList(entries);
+        synchronized (entries) {
+            return Collections.unmodifiableList(new ArrayList<>(entries));
+        }
     }
 
     public List<AuditEntry> getByPerformer(String performer) {
@@ -47,13 +115,15 @@ public class AuditLog {
         }
         String p = ValidationUtils.normalizeString(performer);
 
-        List<AuditEntry> result = new ArrayList<>();
-        for (AuditEntry e : entries) {
-            if (e.performer().equalsIgnoreCase(p)) {
-                result.add(e);
+        synchronized (entries) {
+            List<AuditEntry> result = new ArrayList<>();
+            for (AuditEntry e : entries) {
+                if (e.performer().equalsIgnoreCase(p)) {
+                    result.add(e);
+                }
             }
+            return result;
         }
-        return result;
     }
 
     public List<AuditEntry> getByAction(String action) {
@@ -62,23 +132,26 @@ public class AuditLog {
         }
         String a = ValidationUtils.normalizeString(action).toUpperCase();
 
-        List<AuditEntry> result = new ArrayList<>();
-        for (AuditEntry e : entries) {
-            if (e.action().equalsIgnoreCase(a)) {
-                result.add(e);
+        synchronized (entries) {
+            List<AuditEntry> result = new ArrayList<>();
+            for (AuditEntry e : entries) {
+                if (e.action().equalsIgnoreCase(a)) {
+                    result.add(e);
+                }
             }
+            return result;
         }
-        return result;
     }
 
     public void printLog() {
-        if (entries.isEmpty()) {
+        List<AuditEntry> snapshot = getAll();
+        if (snapshot.isEmpty()) {
             System.out.println("Audit log is empty.");
             return;
         }
 
         System.out.println("\n=== AUDIT LOG ===");
-        for (AuditEntry e : entries) {
+        for (AuditEntry e : snapshot) {
             String details = (e.details() == null || e.details().isBlank()) ? "" : " | " + e.details();
             System.out.printf("[%s] %s | performer=%s | target=%s%s%n",
                     e.timestamp(), e.action(), e.performer(), e.target(), details);
@@ -89,9 +162,11 @@ public class AuditLog {
     public void saveToFile(String filename) {
         ValidationUtils.requireNonEmpty(filename, "filename");
 
+        List<AuditEntry> snapshot = getAll();
+
         StringBuilder sb = new StringBuilder();
         sb.append("timestamp,action,performer,target,details\n");
-        for (AuditEntry e : entries) {
+        for (AuditEntry e : snapshot) {
             sb.append(csv(e.timestamp())).append(',')
                     .append(csv(e.action())).append(',')
                     .append(csv(e.performer())).append(',')
@@ -114,4 +189,3 @@ public class AuditLog {
         return "\"" + v.replace("\"", "\"\"") + "\"";
     }
 }
-
