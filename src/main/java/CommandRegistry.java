@@ -30,12 +30,16 @@ public class CommandRegistry {
                 System.out.println("No users found.");
                 return;
             }
-            System.out.println("\n=== Users ===");
-            System.out.printf("%-20s %-25s %-30s\n", "Username", "Full Name", "Email");
-            System.out.println("-".repeat(80));
+            List<String[]> rows = new ArrayList<>();
             for (User u : users) {
-                System.out.printf("%-20s %-25s %-30s\n", u.username(), u.fullName(), u.email());
+                rows.add(new String[]{u.username(), u.fullName(), u.email()});
             }
+            System.out.println();
+            System.out.println(FormatUtils.formatHeader("Users"));
+            System.out.println(FormatUtils.formatTable(
+                    new String[]{"Username", "Full Name", "Email"},
+                    rows
+            ));
             System.out.println();
         });
 
@@ -65,10 +69,13 @@ public class CommandRegistry {
             }
 
             User user = userOpt.get();
-            System.out.println("\n=== User Details ===");
-            System.out.println("Username: " + user.username());
-            System.out.println("Full Name: " + user.fullName());
-            System.out.println("Email: " + user.email());
+            System.out.println();
+            System.out.println(FormatUtils.formatHeader("User Details"));
+            System.out.println(FormatUtils.formatBox(
+                    "Username: " + user.username() + "\n" +
+                            "Full Name: " + user.fullName() + "\n" +
+                            "Email: " + user.email()
+            ));
 
             List<RoleAssignment> assignments = sys.getAssignmentManager().findByUser(user);
             System.out.println("\nAssigned Roles:");
@@ -196,12 +203,20 @@ public class CommandRegistry {
                 System.out.println("No roles found.");
                 return;
             }
-            System.out.println("\n=== Roles ===");
-            System.out.printf("%-20s %-10s %-40s\n", "Name", "Permissions", "Description");
-            System.out.println("-".repeat(80));
+            List<String[]> rows = new ArrayList<>();
             for (Role r : roles) {
-                System.out.printf("%-20s %-10d %-40s\n", r.getName(), r.getPermissions().size(), r.getDescription());
+                rows.add(new String[]{
+                        r.getName(),
+                        String.valueOf(r.getPermissions().size()),
+                        r.getDescription()
+                });
             }
+            System.out.println();
+            System.out.println(FormatUtils.formatHeader("Roles"));
+            System.out.println(FormatUtils.formatTable(
+                    new String[]{"Name", "Permissions", "Description"},
+                    rows
+            ));
             System.out.println();
         });
 

@@ -1,13 +1,20 @@
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
+import java.time.format.ResolverStyle;
+import java.util.Locale;
 
 public final class ValidationUtils {
 
     private ValidationUtils() {}
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+            new DateTimeFormatterBuilder()
+                    .parseCaseSensitive()
+                    .appendPattern("uuuu-MM-dd HH:mm")
+                    .toFormatter(Locale.ROOT)
+                    .withResolverStyle(ResolverStyle.STRICT);
 
     private static final String USERNAME_REGEX = "^[a-zA-Z0-9_]{3,20}$";
     private static final String EMAIL_REGEX = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
