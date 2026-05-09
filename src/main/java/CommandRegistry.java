@@ -40,12 +40,9 @@ public class CommandRegistry {
         });
 
         parser.registerCommand("user-create", "Create a new user", (scanner, sys) -> {
-            System.out.print("Enter username: ");
-            String username = scanner.nextLine().trim();
-            System.out.print("Enter full name: ");
-            String fullName = scanner.nextLine().trim();
-            System.out.print("Enter email: ");
-            String email = scanner.nextLine().trim();
+            String username = ConsoleUtils.promptString(scanner, "Enter username: ", true);
+            String fullName = ConsoleUtils.promptString(scanner, "Enter full name: ", true);
+            String email = ConsoleUtils.promptString(scanner, "Enter email: ", true);
 
             try {
                 User user = User.create(username, fullName, email);
@@ -59,8 +56,7 @@ public class CommandRegistry {
         });
 
         parser.registerCommand("user-view", "View user details", (scanner, sys) -> {
-            System.out.print("Enter username: ");
-            String username = scanner.nextLine().trim();
+            String username = ConsoleUtils.promptString(scanner, "Enter username: ", true);
 
             Optional<User> userOpt = sys.getUserManager().findByUsername(username);
             if (userOpt.isEmpty()) {
@@ -101,18 +97,15 @@ public class CommandRegistry {
         });
 
         parser.registerCommand("user-update", "Update user data", (scanner, sys) -> {
-            System.out.print("Enter username: ");
-            String username = scanner.nextLine().trim();
+            String username = ConsoleUtils.promptString(scanner, "Enter username: ", true);
 
             if (!sys.getUserManager().exists(username)) {
                 System.out.println("User not found.");
                 return;
             }
 
-            System.out.print("Enter new full name (leave empty to keep current): ");
-            String fullName = scanner.nextLine().trim();
-            System.out.print("Enter new email (leave empty to keep current): ");
-            String email = scanner.nextLine().trim();
+            String fullName = ConsoleUtils.promptString(scanner, "Enter new full name (leave empty to keep current): ", false);
+            String email = ConsoleUtils.promptString(scanner, "Enter new email (leave empty to keep current): ", false);
 
             try {
                 sys.getUserManager().update(username, fullName.isEmpty() ? null : fullName, email.isEmpty() ? null : email);
@@ -123,8 +116,7 @@ public class CommandRegistry {
         });
 
         parser.registerCommand("user-delete", "Delete a user", (scanner, sys) -> {
-            System.out.print("Enter username: ");
-            String username = scanner.nextLine().trim();
+            String username = ConsoleUtils.promptString(scanner, "Enter username: ", true);
 
             Optional<User> userOpt = sys.getUserManager().findByUsername(username);
             if (userOpt.isEmpty()) {
@@ -138,9 +130,8 @@ public class CommandRegistry {
                 System.out.println("User has " + assignments.size() + " assignments. They will be removed.");
             }
 
-            System.out.print("Confirm deletion (type 'yes'): ");
-            String confirm = scanner.nextLine().trim();
-            if (!"yes".equalsIgnoreCase(confirm)) {
+            boolean confirm = ConsoleUtils.promptYesNo(scanner, "Confirm deletion (yes/no): ");
+            if (!confirm) {
                 System.out.println("Deletion cancelled.");
                 return;
             }
@@ -160,27 +151,25 @@ public class CommandRegistry {
             System.out.println("2. By email contains");
             System.out.println("3. By email domain");
             System.out.println("4. By full name contains");
-            System.out.print("Choose filter (1-4): ");
-
-            String choice = scanner.nextLine().trim();
+            int choice = ConsoleUtils.promptInt(scanner, "Choose filter (1-4): ", 1, 4);
             UserFilter filter = null;
 
             switch (choice) {
-                case "1":
-                    System.out.print("Enter username substring: ");
-                    filter = UserFilters.byUsernameContains(scanner.nextLine().trim());
+                case 1:
+                    filter = UserFilters.byUsernameContains(
+                            ConsoleUtils.promptString(scanner, "Enter username substring: ", true));
                     break;
-                case "2":
-                    System.out.print("Enter email substring: ");
-                    filter = UserFilters.byEmailContains(scanner.nextLine().trim());
+                case 2:
+                    filter = UserFilters.byEmailContains(
+                            ConsoleUtils.promptString(scanner, "Enter email substring: ", true));
                     break;
-                case "3":
-                    System.out.print("Enter email domain (e.g., @example.com): ");
-                    filter = UserFilters.byEmailDomain(scanner.nextLine().trim());
+                case 3:
+                    filter = UserFilters.byEmailDomain(
+                            ConsoleUtils.promptString(scanner, "Enter email domain (e.g., @example.com): ", true));
                     break;
-                case "4":
-                    System.out.print("Enter full name substring: ");
-                    filter = UserFilters.byFullNameContains(scanner.nextLine().trim());
+                case 4:
+                    filter = UserFilters.byFullNameContains(
+                            ConsoleUtils.promptString(scanner, "Enter full name substring: ", true));
                     break;
                 default:
                     System.out.println("Invalid choice.");
@@ -217,10 +206,8 @@ public class CommandRegistry {
         });
 
         parser.registerCommand("role-create", "Create a new role", (scanner, sys) -> {
-            System.out.print("Enter role name: ");
-            String name = scanner.nextLine().trim();
-            System.out.print("Enter role description: ");
-            String description = scanner.nextLine().trim();
+            String name = ConsoleUtils.promptString(scanner, "Enter role name: ", true);
+            String description = ConsoleUtils.promptString(scanner, "Enter role description: ", true);
 
             try {
                 Role role = new Role(name, description);
@@ -228,17 +215,14 @@ public class CommandRegistry {
                 sys.getAuditLog().log("ROLE_CREATE", sys.getCurrentUser(), role.getName(), role.getDescription());
                 System.out.println("Role created successfully.");
 
-                System.out.print("Do you want to add permissions now? (y/n): ");
-                if ("y".equalsIgnoreCase(scanner.nextLine().trim())) {
+                boolean addNow = ConsoleUtils.promptYesNo(scanner, "Do you want to add permissions now? (y/n): ");
+                if (addNow) {
                     while (true) {
-                        System.out.print("Enter permission name (or 'done' to finish): ");
-                        String permName = scanner.nextLine().trim();
+                        String permName = ConsoleUtils.promptString(scanner, "Enter permission name (or 'done' to finish): ", true);
                         if ("done".equalsIgnoreCase(permName)) break;
 
-                        System.out.print("Enter resource: ");
-                        String resource = scanner.nextLine().trim();
-                        System.out.print("Enter description: ");
-                        String permDesc = scanner.nextLine().trim();
+                        String resource = ConsoleUtils.promptString(scanner, "Enter resource: ", true);
+                        String permDesc = ConsoleUtils.promptString(scanner, "Enter description: ", true);
 
                         try {
                             Permission perm = new Permission(permName, resource, permDesc);
@@ -255,8 +239,7 @@ public class CommandRegistry {
         });
 
         parser.registerCommand("role-view", "View role details", (scanner, sys) -> {
-            System.out.print("Enter role name: ");
-            String name = scanner.nextLine().trim();
+            String name = ConsoleUtils.promptString(scanner, "Enter role name: ", true);
 
             Optional<Role> roleOpt = sys.getRoleManager().findByName(name);
             if (roleOpt.isEmpty()) {
@@ -268,8 +251,7 @@ public class CommandRegistry {
         });
 
         parser.registerCommand("role-update", "Update role name/description", (scanner, sys) -> {
-            System.out.print("Enter role name to update: ");
-            String oldName = scanner.nextLine().trim();
+            String oldName = ConsoleUtils.promptString(scanner, "Enter role name to update: ", true);
 
             Optional<Role> roleOpt = sys.getRoleManager().findByName(oldName);
             if (roleOpt.isEmpty()) {
@@ -278,10 +260,8 @@ public class CommandRegistry {
             }
 
             Role role = roleOpt.get();
-            System.out.print("Enter new name (leave empty to keep current): ");
-            String newName = scanner.nextLine().trim();
-            System.out.print("Enter new description (leave empty to keep current): ");
-            String newDesc = scanner.nextLine().trim();
+            String newName = ConsoleUtils.promptString(scanner, "Enter new name (leave empty to keep current): ", false);
+            String newDesc = ConsoleUtils.promptString(scanner, "Enter new description (leave empty to keep current): ", false);
 
             sys.getRoleManager().remove(role);
             Role updatedRole = new Role(newName.isEmpty() ? role.getName() : newName,
@@ -294,8 +274,7 @@ public class CommandRegistry {
         });
 
         parser.registerCommand("role-delete", "Delete a role", (scanner, sys) -> {
-            System.out.print("Enter role name: ");
-            String name = scanner.nextLine().trim();
+            String name = ConsoleUtils.promptString(scanner, "Enter role name: ", true);
 
             Optional<Role> roleOpt = sys.getRoleManager().findByName(name);
             if (roleOpt.isEmpty()) {
@@ -308,8 +287,8 @@ public class CommandRegistry {
             if (!assignments.isEmpty()) {
                 System.out.println("Role is assigned to " + assignments.size() + " user(s):");
                 assignments.stream().map(RoleAssignment::user).forEach(u -> System.out.println("  - " + u.username()));
-                System.out.print("Confirm deletion (type 'yes'): ");
-                if (!"yes".equalsIgnoreCase(scanner.nextLine().trim())) {
+                boolean confirm = ConsoleUtils.promptYesNo(scanner, "Confirm deletion (yes/no): ");
+                if (!confirm) {
                     System.out.println("Deletion cancelled.");
                     return;
                 }
@@ -325,8 +304,7 @@ public class CommandRegistry {
         });
 
         parser.registerCommand("role-add-permission", "Add permission to role", (scanner, sys) -> {
-            System.out.print("Enter role name: ");
-            String roleName = scanner.nextLine().trim();
+            String roleName = ConsoleUtils.promptString(scanner, "Enter role name: ", true);
 
             Optional<Role> roleOpt = sys.getRoleManager().findByName(roleName);
             if (roleOpt.isEmpty()) {
@@ -334,12 +312,9 @@ public class CommandRegistry {
                 return;
             }
 
-            System.out.print("Enter permission name: ");
-            String permName = scanner.nextLine().trim();
-            System.out.print("Enter resource: ");
-            String resource = scanner.nextLine().trim();
-            System.out.print("Enter description: ");
-            String description = scanner.nextLine().trim();
+            String permName = ConsoleUtils.promptString(scanner, "Enter permission name: ", true);
+            String resource = ConsoleUtils.promptString(scanner, "Enter resource: ", true);
+            String description = ConsoleUtils.promptString(scanner, "Enter description: ", true);
 
             try {
                 Permission perm = new Permission(permName, resource, description);
@@ -351,8 +326,7 @@ public class CommandRegistry {
         });
 
         parser.registerCommand("role-remove-permission", "Remove permission from role", (scanner, sys) -> {
-            System.out.print("Enter role name: ");
-            String roleName = scanner.nextLine().trim();
+            String roleName = ConsoleUtils.promptString(scanner, "Enter role name: ", true);
 
             Optional<Role> roleOpt = sys.getRoleManager().findByName(roleName);
             if (roleOpt.isEmpty()) {
@@ -369,23 +343,9 @@ public class CommandRegistry {
 
             System.out.println("\nPermissions:");
             List<Permission> permList = new ArrayList<>(permissions);
-            for (int i = 0; i < permList.size(); i++) {
-                System.out.printf("  %d. %s\n", i + 1, permList.get(i).format());
-            }
-
-            System.out.print("Enter number to remove: ");
-            try {
-                int index = Integer.parseInt(scanner.nextLine().trim()) - 1;
-                if (index >= 0 && index < permList.size()) {
-                    Permission toRemove = permList.get(index);
-                    sys.getRoleManager().removePermissionFromRole(roleName, toRemove);
-                    System.out.println("Permission removed successfully.");
-                } else {
-                    System.out.println("Invalid number.");
-                }
-            } catch (NumberFormatException e) {
-                System.out.println("Invalid input.");
-            }
+            Permission toRemove = ConsoleUtils.promptChoice(scanner, "Choose permission to remove:", permList);
+            sys.getRoleManager().removePermissionFromRole(roleName, toRemove);
+            System.out.println("Permission removed successfully.");
         });
 
         parser.registerCommand("role-search", "Search roles", (scanner, sys) -> {
@@ -393,32 +353,22 @@ public class CommandRegistry {
             System.out.println("1. By name contains");
             System.out.println("2. Has specific permission");
             System.out.println("3. Has at least N permissions");
-            System.out.print("Choose filter (1-3): ");
-
-            String choice = scanner.nextLine().trim();
+            int choice = ConsoleUtils.promptInt(scanner, "Choose filter (1-3): ", 1, 3);
             RoleFilter filter = null;
 
             switch (choice) {
-                case "1":
-                    System.out.print("Enter name substring: ");
-                    filter = RoleFilters.byNameContains(scanner.nextLine().trim());
+                case 1:
+                    filter = RoleFilters.byNameContains(
+                            ConsoleUtils.promptString(scanner, "Enter name substring: ", true));
                     break;
-                case "2":
-                    System.out.print("Enter permission name: ");
-                    String permName = scanner.nextLine().trim();
-                    System.out.print("Enter resource: ");
-                    String resource = scanner.nextLine().trim();
+                case 2:
+                    String permName = ConsoleUtils.promptString(scanner, "Enter permission name: ", true);
+                    String resource = ConsoleUtils.promptString(scanner, "Enter resource: ", true);
                     filter = RoleFilters.hasPermission(permName, resource);
                     break;
-                case "3":
-                    System.out.print("Enter minimum number of permissions: ");
-                    try {
-                        int n = Integer.parseInt(scanner.nextLine().trim());
-                        filter = RoleFilters.hasAtLeastNPermissions(n);
-                    } catch (NumberFormatException e) {
-                        System.out.println("Invalid number.");
-                        return;
-                    }
+                case 3:
+                    int n = ConsoleUtils.promptInt(scanner, "Enter minimum number of permissions: ", 0, Integer.MAX_VALUE);
+                    filter = RoleFilters.hasAtLeastNPermissions(n);
                     break;
                 default:
                     System.out.println("Invalid choice.");
@@ -440,8 +390,7 @@ public class CommandRegistry {
 
     private void registerAssignmentCommands() {
         parser.registerCommand("assign-role", "Assign role to user", (scanner, sys) -> {
-            System.out.print("Enter username: ");
-            String username = scanner.nextLine().trim();
+            String username = ConsoleUtils.promptString(scanner, "Enter username: ", true);
 
             Optional<User> userOpt = sys.getUserManager().findByUsername(username);
             if (userOpt.isEmpty()) {
@@ -456,27 +405,13 @@ public class CommandRegistry {
                 return;
             }
 
-            System.out.println("\nAvailable roles:");
-            for (int i = 0; i < roles.size(); i++) {
-                System.out.printf("  %d. %s\n", i + 1, roles.get(i).getName());
-            }
-            System.out.print("Choose role number: ");
+            Role role = ConsoleUtils.promptChoice(scanner, "Available roles:", roles);
+            String type = ConsoleUtils.promptString(scanner, "Assignment type (permanent/temporary): ", true).toLowerCase();
+            String reason = ConsoleUtils.promptString(scanner, "Reason for assignment: ", false);
+
+            AssignmentMetadata metadata = AssignmentMetadata.now(sys.getCurrentUser(), reason);
+
             try {
-                int idx = Integer.parseInt(scanner.nextLine().trim()) - 1;
-                if (idx < 0 || idx >= roles.size()) {
-                    System.out.println("Invalid choice.");
-                    return;
-                }
-                Role role = roles.get(idx);
-
-                System.out.print("Assignment type (permanent/temporary): ");
-                String type = scanner.nextLine().trim().toLowerCase();
-
-                System.out.print("Reason for assignment: ");
-                String reason = scanner.nextLine().trim();
-
-                AssignmentMetadata metadata = AssignmentMetadata.now(sys.getCurrentUser(), reason);
-
                 if ("permanent".equals(type)) {
                     PermanentAssignment assignment = new PermanentAssignment(user, role, metadata);
                     sys.getAssignmentManager().add(assignment);
@@ -485,10 +420,8 @@ public class CommandRegistry {
                             "type=PERMANENT id=" + assignment.assignmentId());
                     System.out.println("Permanent assignment created.");
                 } else if ("temporary".equals(type)) {
-                    System.out.print("Expiration date (yyyy-MM-dd HH:mm): ");
-                    String expiresAt = scanner.nextLine().trim();
-                    System.out.print("Auto-renew? (y/n): ");
-                    boolean autoRenew = "y".equalsIgnoreCase(scanner.nextLine().trim());
+                    String expiresAt = ConsoleUtils.promptString(scanner, "Expiration date (yyyy-MM-dd HH:mm): ", true);
+                    boolean autoRenew = ConsoleUtils.promptYesNo(scanner, "Auto-renew? (y/n): ");
 
                     TemporaryAssignment assignment = new TemporaryAssignment(user, role, metadata, expiresAt, autoRenew);
                     sys.getAssignmentManager().add(assignment);
@@ -499,16 +432,13 @@ public class CommandRegistry {
                 } else {
                     System.out.println("Invalid type.");
                 }
-            } catch (NumberFormatException e) {
-                System.out.println("Invalid input.");
             } catch (IllegalStateException e) {
                 System.out.println("Error: " + e.getMessage());
             }
         });
 
         parser.registerCommand("revoke-role", "Revoke role from user", (scanner, sys) -> {
-            System.out.print("Enter username: ");
-            String username = scanner.nextLine().trim();
+            String username = ConsoleUtils.promptString(scanner, "Enter username: ", true);
 
             Optional<User> userOpt = sys.getUserManager().findByUsername(username);
             if (userOpt.isEmpty()) {
@@ -526,32 +456,16 @@ public class CommandRegistry {
                 return;
             }
 
-            System.out.println("\nActive assignments:");
-            for (int i = 0; i < assignments.size(); i++) {
-                RoleAssignment a = assignments.get(i);
-                System.out.printf("  %d. %s [%s]\n", i + 1, a.role().getName(), a.assignmentType());
-            }
-            System.out.print("Choose assignment to revoke: ");
-            try {
-                int idx = Integer.parseInt(scanner.nextLine().trim()) - 1;
-                if (idx >= 0 && idx < assignments.size()) {
-                    RoleAssignment a = assignments.get(idx);
-                    sys.getAssignmentManager().revokeAssignment(a.assignmentId());
-                    sys.getAuditLog().log("ROLE_REVOKE", sys.getCurrentUser(),
-                            a.user().username() + " -> " + a.role().getName(),
-                            "id=" + a.assignmentId() + " type=" + a.assignmentType());
-                    System.out.println("Assignment revoked.");
-                } else {
-                    System.out.println("Invalid choice.");
-                }
-            } catch (NumberFormatException e) {
-                System.out.println("Invalid input.");
-            }
+            RoleAssignment a = ConsoleUtils.promptChoice(scanner, "Active assignments:", assignments);
+            sys.getAssignmentManager().revokeAssignment(a.assignmentId());
+            sys.getAuditLog().log("ROLE_REVOKE", sys.getCurrentUser(),
+                    a.user().username() + " -> " + a.role().getName(),
+                    "id=" + a.assignmentId() + " type=" + a.assignmentType());
+            System.out.println("Assignment revoked.");
         });
 
         parser.registerCommand("assignment-list-user", "List user assignments", (scanner, sys) -> {
-            System.out.print("Enter username: ");
-            String username = scanner.nextLine().trim();
+            String username = ConsoleUtils.promptString(scanner, "Enter username: ", true);
 
             Optional<User> userOpt = sys.getUserManager().findByUsername(username);
             if (userOpt.isEmpty()) {
@@ -580,8 +494,7 @@ public class CommandRegistry {
         });
 
         parser.registerCommand("assignment-list-role", "List users with role", (scanner, sys) -> {
-            System.out.print("Enter role name: ");
-            String roleName = scanner.nextLine().trim();
+            String roleName = ConsoleUtils.promptString(scanner, "Enter role name: ", true);
 
             Optional<Role> roleOpt = sys.getRoleManager().findByName(roleName);
             if (roleOpt.isEmpty()) {
@@ -643,8 +556,7 @@ public class CommandRegistry {
         });
 
         parser.registerCommand("assignment-extend", "Extend temporary assignment", (scanner, sys) -> {
-            System.out.print("Enter assignment ID: ");
-            String id = scanner.nextLine().trim();
+            String id = ConsoleUtils.promptString(scanner, "Enter assignment ID: ", true);
 
             Optional<RoleAssignment> assignmentOpt = sys.getAssignmentManager().findById(id);
             if (assignmentOpt.isEmpty()) {
@@ -657,8 +569,7 @@ public class CommandRegistry {
                 return;
             }
 
-            System.out.print("New expiration date (yyyy-MM-dd HH:mm): ");
-            String newDate = scanner.nextLine().trim();
+            String newDate = ConsoleUtils.promptString(scanner, "New expiration date (yyyy-MM-dd HH:mm): ", true);
 
             try {
                 sys.getAssignmentManager().extendTemporaryAssignment(id, newDate);
@@ -676,42 +587,33 @@ public class CommandRegistry {
             System.out.println("4. By status (active/inactive)");
             System.out.println("5. Assigned after date");
             System.out.println("6. Expiring before date");
-            System.out.print("Choose filter (1-6): ");
-
-            String choice = scanner.nextLine().trim();
+            int choice = ConsoleUtils.promptInt(scanner, "Choose filter (1-6): ", 1, 6);
             AssignmentFilter filter = null;
 
             switch (choice) {
-                case "1":
-                    System.out.print("Enter username: ");
-                    String username = scanner.nextLine().trim();
-                    filter = AssignmentFilters.byUsername(username);
+                case 1:
+                    filter = AssignmentFilters.byUsername(
+                            ConsoleUtils.promptString(scanner, "Enter username: ", true));
                     break;
-                case "2":
-                    System.out.print("Enter role name: ");
-                    String roleName = scanner.nextLine().trim();
-                    filter = AssignmentFilters.byRoleName(roleName);
+                case 2:
+                    filter = AssignmentFilters.byRoleName(
+                            ConsoleUtils.promptString(scanner, "Enter role name: ", true));
                     break;
-                case "3":
-                    System.out.print("Enter type (permanent/temporary): ");
-                    filter = AssignmentFilters.byType(scanner.nextLine().trim().toUpperCase());
+                case 3:
+                    filter = AssignmentFilters.byType(
+                            ConsoleUtils.promptString(scanner, "Enter type (permanent/temporary): ", true).toUpperCase());
                     break;
-                case "4":
-                    System.out.print("Enter status (active/inactive): ");
-                    String status = scanner.nextLine().trim();
-                    if ("active".equalsIgnoreCase(status)) {
-                        filter = AssignmentFilters.activeOnly();
-                    } else {
-                        filter = AssignmentFilters.inactiveOnly();
-                    }
+                case 4:
+                    boolean active = ConsoleUtils.promptYesNo(scanner, "Active only? (y/n): ");
+                    filter = active ? AssignmentFilters.activeOnly() : AssignmentFilters.inactiveOnly();
                     break;
-                case "5":
-                    System.out.print("Enter date (yyyy-MM-dd HH:mm): ");
-                    filter = AssignmentFilters.assignedAfter(scanner.nextLine().trim());
+                case 5:
+                    filter = AssignmentFilters.assignedAfter(
+                            ConsoleUtils.promptString(scanner, "Enter date (yyyy-MM-dd HH:mm): ", true));
                     break;
-                case "6":
-                    System.out.print("Enter date (yyyy-MM-dd HH:mm): ");
-                    filter = AssignmentFilters.expiringBefore(scanner.nextLine().trim());
+                case 6:
+                    filter = AssignmentFilters.expiringBefore(
+                            ConsoleUtils.promptString(scanner, "Enter date (yyyy-MM-dd HH:mm): ", true));
                     break;
                 default:
                     System.out.println("Invalid choice.");
@@ -734,8 +636,7 @@ public class CommandRegistry {
 
     private void registerPermissionCommands() {
         parser.registerCommand("permissions-user", "View user permissions", (scanner, sys) -> {
-            System.out.print("Enter username: ");
-            String username = scanner.nextLine().trim();
+            String username = ConsoleUtils.promptString(scanner, "Enter username: ", true);
 
             Optional<User> userOpt = sys.getUserManager().findByUsername(username);
             if (userOpt.isEmpty()) {
@@ -761,8 +662,7 @@ public class CommandRegistry {
         });
 
         parser.registerCommand("permissions-check", "Check if user has permission", (scanner, sys) -> {
-            System.out.print("Enter username: ");
-            String username = scanner.nextLine().trim();
+            String username = ConsoleUtils.promptString(scanner, "Enter username: ", true);
 
             Optional<User> userOpt = sys.getUserManager().findByUsername(username);
             if (userOpt.isEmpty()) {
@@ -770,10 +670,8 @@ public class CommandRegistry {
                 return;
             }
 
-            System.out.print("Enter permission name: ");
-            String permName = scanner.nextLine().trim();
-            System.out.print("Enter resource: ");
-            String resource = scanner.nextLine().trim();
+            String permName = ConsoleUtils.promptString(scanner, "Enter permission name: ", true);
+            String resource = ConsoleUtils.promptString(scanner, "Enter resource: ", true);
 
             boolean hasPermission = sys.getAssignmentManager().userHasPermission(userOpt.get(), permName, resource);
             if (hasPermission) {
@@ -791,12 +689,59 @@ public class CommandRegistry {
 
         parser.registerCommand("audit-log", "Show audit log (and optionally save)", (scanner, sys) -> {
             sys.getAuditLog().printLog();
-            System.out.print("Save to file? Enter filename or leave empty: ");
-            String filename = scanner.nextLine().trim();
+            String filename = ConsoleUtils.promptString(scanner, "Save to file? Enter filename or leave empty: ", false);
             if (!filename.isEmpty()) {
                 try {
                     sys.getAuditLog().saveToFile(filename);
                     System.out.println("Audit log saved to " + filename);
+                } catch (Exception e) {
+                    System.out.println("Error: " + e.getMessage());
+                }
+            }
+        });
+
+        parser.registerCommand("report-users", "Report: users with assigned roles", (scanner, sys) -> {
+            ReportGenerator generator = new ReportGenerator();
+            String report = generator.generateUserReport(sys.getUserManager(), sys.getAssignmentManager());
+            System.out.println(report);
+
+            String filename = ConsoleUtils.promptString(scanner, "Save to file? Enter filename or leave empty: ", false);
+            if (!filename.isEmpty()) {
+                try {
+                    generator.exportToFile(report, filename);
+                    System.out.println("Report saved to " + filename);
+                } catch (Exception e) {
+                    System.out.println("Error: " + e.getMessage());
+                }
+            }
+        });
+
+        parser.registerCommand("report-roles", "Report: roles with user counts", (scanner, sys) -> {
+            ReportGenerator generator = new ReportGenerator();
+            String report = generator.generateRoleReport(sys.getRoleManager(), sys.getAssignmentManager());
+            System.out.println(report);
+
+            String filename = ConsoleUtils.promptString(scanner, "Save to file? Enter filename or leave empty: ", false);
+            if (!filename.isEmpty()) {
+                try {
+                    generator.exportToFile(report, filename);
+                    System.out.println("Report saved to " + filename);
+                } catch (Exception e) {
+                    System.out.println("Error: " + e.getMessage());
+                }
+            }
+        });
+
+        parser.registerCommand("report-matrix", "Report: permission matrix (users x resources)", (scanner, sys) -> {
+            ReportGenerator generator = new ReportGenerator();
+            String report = generator.generatePermissionMatrix(sys.getUserManager(), sys.getAssignmentManager());
+            System.out.println(report);
+
+            String filename = ConsoleUtils.promptString(scanner, "Save to file? Enter filename or leave empty: ", false);
+            if (!filename.isEmpty()) {
+                try {
+                    generator.exportToFile(report, filename);
+                    System.out.println("Report saved to " + filename);
                 } catch (Exception e) {
                     System.out.println("Error: " + e.getMessage());
                 }
@@ -813,8 +758,7 @@ public class CommandRegistry {
         });
 
         parser.registerCommand("exit", "Exit the program", (scanner, sys) -> {
-            System.out.print("Are you sure you want to exit? (y/n): ");
-            if ("y".equalsIgnoreCase(scanner.nextLine().trim())) {
+            if (ConsoleUtils.promptYesNo(scanner, "Are you sure you want to exit? (y/n): ")) {
                 System.out.println("Goodbye!");
                 System.exit(0);
             }
