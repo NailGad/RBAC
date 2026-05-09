@@ -14,8 +14,10 @@ public class TemporaryAssignment extends AbstractRoleAssignment {
                                String expiresAt, boolean autoRenew) {
         super(user, role, metadata);
 
-        if (expiresAt == null || expiresAt.isBlank()) {
-            throw new IllegalArgumentException("expiresAt не может быть пустым");
+        ValidationUtils.requireNonEmpty(expiresAt, "expiresAt");
+        expiresAt = ValidationUtils.normalizeString(expiresAt);
+        if (!ValidationUtils.isValidDate(expiresAt)) {
+            throw new IllegalArgumentException("expiresAt должен быть в формате yyyy-MM-dd HH:mm");
         }
 
         this.expiresAt = expiresAt;
@@ -43,10 +45,12 @@ public class TemporaryAssignment extends AbstractRoleAssignment {
     }
 
     public void extend(String newExpirationDate) {
-        if (newExpirationDate == null || newExpirationDate.isBlank()) {
-            throw new IllegalArgumentException("Новая дата не может быть пустой");
+        ValidationUtils.requireNonEmpty(newExpirationDate, "New expiration date");
+        String normalized = ValidationUtils.normalizeString(newExpirationDate);
+        if (!ValidationUtils.isValidDate(normalized)) {
+            throw new IllegalArgumentException("New expiration date должен быть в формате yyyy-MM-dd HH:mm");
         }
-        this.expiresAt = newExpirationDate;
+        this.expiresAt = normalized;
     }
 
     public String getTimeRemaining() {

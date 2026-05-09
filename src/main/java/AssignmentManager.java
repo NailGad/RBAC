@@ -188,9 +188,7 @@ public class AssignmentManager implements Repository<RoleAssignment> {
     }
 
     public void revokeAssignment(String assignmentId) {
-        if (assignmentId == null || assignmentId.isBlank()) {
-            throw new IllegalArgumentException("Assignment ID cannot be empty");
-        }
+        ValidationUtils.requireNonEmpty(assignmentId, "Assignment ID");
 
         RoleAssignment assignment = assignmentsById.get(assignmentId);
         if (assignment == null) {
@@ -205,11 +203,11 @@ public class AssignmentManager implements Repository<RoleAssignment> {
     }
 
     public void extendTemporaryAssignment(String assignmentId, String newExpirationDate) {
-        if (assignmentId == null || assignmentId.isBlank()) {
-            throw new IllegalArgumentException("Assignment ID cannot be empty");
-        }
-        if (newExpirationDate == null || newExpirationDate.isBlank()) {
-            throw new IllegalArgumentException("New expiration date cannot be empty");
+        ValidationUtils.requireNonEmpty(assignmentId, "Assignment ID");
+        ValidationUtils.requireNonEmpty(newExpirationDate, "New expiration date");
+        newExpirationDate = ValidationUtils.normalizeString(newExpirationDate);
+        if (!ValidationUtils.isValidDate(newExpirationDate)) {
+            throw new IllegalArgumentException("New expiration date должен быть в формате yyyy-MM-dd HH:mm");
         }
 
         RoleAssignment assignment = assignmentsById.get(assignmentId);

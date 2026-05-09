@@ -2,23 +2,17 @@ public record Permission(String name, String resource, String description) {
 
     public Permission {
 
-        if (name == null || name.isBlank()) {
-            throw new IllegalArgumentException("Name не может быть пустым");
-        }
-        name = name.trim().toUpperCase();
+        ValidationUtils.requireNonEmpty(name, "Name");
+        name = ValidationUtils.normalizeString(name).toUpperCase();
         if (name.contains(" ")) {
             throw new IllegalArgumentException("Name не может содержать пробелы");
         }
 
-        if (resource == null || resource.isBlank()) {
-            throw new IllegalArgumentException("Resource не может быть пустым");
-        }
-        resource = resource.trim().toLowerCase();
+        ValidationUtils.requireNonEmpty(resource, "Resource");
+        resource = ValidationUtils.normalizeString(resource).toLowerCase();
 
-        if (description == null || description.isBlank()) {
-            throw new IllegalArgumentException("Description не может быть пустым");
-        }
-        description = description.trim();
+        ValidationUtils.requireNonEmpty(description, "Description");
+        description = ValidationUtils.normalizeString(description);
     }
 
 

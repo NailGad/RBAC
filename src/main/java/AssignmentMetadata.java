@@ -7,17 +7,19 @@ public record AssignmentMetadata(String assignedBy, String assignedAt, String re
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     public AssignmentMetadata {
-        if (assignedBy == null || assignedBy.isBlank()) {
-            throw new IllegalArgumentException("assignedBy не может быть пустым");
-        }
+        ValidationUtils.requireNonEmpty(assignedBy, "assignedBy");
+        assignedBy = ValidationUtils.normalizeString(assignedBy);
 
-        if (assignedAt == null || assignedAt.isBlank()) {
-            throw new IllegalArgumentException("assignedAt не может быть пустым");
+        ValidationUtils.requireNonEmpty(assignedAt, "assignedAt");
+        assignedAt = ValidationUtils.normalizeString(assignedAt);
+        if (!ValidationUtils.isValidDate(assignedAt)) {
+            throw new IllegalArgumentException("assignedAt должен быть в формате yyyy-MM-dd HH:mm");
         }
 
         if (reason == null) {
             reason = "";
         }
+        reason = ValidationUtils.normalizeString(reason);
     }
 
     public static AssignmentMetadata now(String assignedBy, String reason) {

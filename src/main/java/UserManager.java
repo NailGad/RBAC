@@ -95,9 +95,8 @@ public class UserManager implements Repository<User> {
     }
 
     public void update(String username, String newFullName, String newEmail) {
-        if (username == null || username.isBlank()) {
-            throw new IllegalArgumentException("Username cannot be empty");
-        }
+        ValidationUtils.requireNonEmpty(username, "Username");
+        username = ValidationUtils.normalizeString(username);
 
         User existingUser = usersByUsername.get(username);
         if (existingUser == null) {

@@ -40,6 +40,9 @@ public class AssignmentFilters {
 
     public static AssignmentFilter assignedAfter(String date) {
         return assignment -> {
+            if (!ValidationUtils.isValidDate(date)) {
+                return false;
+            }
             try {
                 LocalDateTime filterDate = LocalDateTime.parse(date, FORMATTER);
                 LocalDateTime assignedDate = LocalDateTime.parse(
@@ -54,6 +57,9 @@ public class AssignmentFilters {
     public static AssignmentFilter expiringBefore(String date) {
         return assignment -> {
             if (!assignment.assignmentType().equals("TEMPORARY")) {
+                return false;
+            }
+            if (!ValidationUtils.isValidDate(date)) {
                 return false;
             }
 
