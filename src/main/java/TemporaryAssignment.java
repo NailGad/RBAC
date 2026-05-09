@@ -36,12 +36,7 @@ public class TemporaryAssignment extends AbstractRoleAssignment {
     }
 
     public boolean isExpired() {
-        try {
-            LocalDateTime expiry = LocalDateTime.parse(expiresAt, FORMATTER);
-            return expiry.isBefore(LocalDateTime.now());
-        } catch (Exception e) {
-            return true;
-        }
+        return DateUtils.isBefore(expiresAt, LocalDateTime.now().format(FORMATTER));
     }
 
     public void extend(String newExpirationDate) {
