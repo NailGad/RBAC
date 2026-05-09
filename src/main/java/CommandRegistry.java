@@ -50,6 +50,8 @@ public class CommandRegistry {
             try {
                 User user = User.create(username, fullName, email);
                 sys.getUserManager().add(user);
+                sys.getAuditLog().log("USER_CREATE", sys.getCurrentUser(), user.username(),
+                        "email=" + user.email());
                 System.out.println("User created successfully.");
             } catch (IllegalArgumentException e) {
                 System.out.println("Error: " + e.getMessage());
@@ -147,6 +149,8 @@ public class CommandRegistry {
                 sys.getAssignmentManager().remove(a);
             }
             sys.getUserManager().remove(user);
+            sys.getAuditLog().log("USER_DELETE", sys.getCurrentUser(), user.username(),
+                    "removedAssignments=" + assignments.size());
             System.out.println("User deleted successfully.");
         });
 
@@ -221,6 +225,7 @@ public class CommandRegistry {
             try {
                 Role role = new Role(name, description);
                 sys.getRoleManager().add(role);
+                sys.getAuditLog().log("ROLE_CREATE", sys.getCurrentUser(), role.getName(), role.getDescription());
                 System.out.println("Role created successfully.");
 
                 System.out.print("Do you want to add permissions now? (y/n): ");
@@ -314,6 +319,8 @@ public class CommandRegistry {
             }
 
             sys.getRoleManager().remove(role);
+            sys.getAuditLog().log("ROLE_DELETE", sys.getCurrentUser(), role.getName(),
+                    "removedAssignments=" + assignments.size());
             System.out.println("Role deleted successfully.");
         });
 
@@ -473,6 +480,9 @@ public class CommandRegistry {
                 if ("permanent".equals(type)) {
                     PermanentAssignment assignment = new PermanentAssignment(user, role, metadata);
                     sys.getAssignmentManager().add(assignment);
+                    sys.getAuditLog().log("ROLE_ASSIGN", sys.getCurrentUser(),
+                            user.username() + " -> " + role.getName(),
+                            "type=PERMANENT id=" + assignment.assignmentId());
                     System.out.println("Permanent assignment created.");
                 } else if ("temporary".equals(type)) {
                     System.out.print("Expiration date (yyyy-MM-dd HH:mm): ");
@@ -482,6 +492,9 @@ public class CommandRegistry {
 
                     TemporaryAssignment assignment = new TemporaryAssignment(user, role, metadata, expiresAt, autoRenew);
                     sys.getAssignmentManager().add(assignment);
+                    sys.getAuditLog().log("ROLE_ASSIGN", sys.getCurrentUser(),
+                            user.username() + " -> " + role.getName(),
+                            "type=TEMPORARY id=" + assignment.assignmentId() + " expiresAt=" + assignment.getExpiresAt());
                     System.out.println("Temporary assignment created.");
                 } else {
                     System.out.println("Invalid type.");
@@ -522,7 +535,11 @@ public class CommandRegistry {
             try {
                 int idx = Integer.parseInt(scanner.nextLine().trim()) - 1;
                 if (idx >= 0 && idx < assignments.size()) {
-                    sys.getAssignmentManager().revokeAssignment(assignments.get(idx).assignmentId());
+                    RoleAssignment a = assignments.get(idx);
+                    sys.getAssignmentManager().revokeAssignment(a.assignmentId());
+                    sys.getAuditLog().log("ROLE_REVOKE", sys.getCurrentUser(),
+                            a.user().username() + " -> " + a.role().getName(),
+                            "id=" + a.assignmentId() + " type=" + a.assignmentType());
                     System.out.println("Assignment revoked.");
                 } else {
                     System.out.println("Invalid choice.");
@@ -770,6 +787,20 @@ public class CommandRegistry {
     private void registerUtilityCommands() {
         parser.registerCommand("help", "Show this help", (scanner, sys) -> {
             parser.printHelp();
+        });
+
+        parser.registerCommand("audit-log", "Show audit log (and optionally save)", (scanner, sys) -> {
+            sys.getAuditLog().printLog();
+            System.out.print("Save to file? Enter filename or leave empty: ");
+            String filename = scanner.nextLine().trim();
+            if (!filename.isEmpty()) {
+                try {
+                    sys.getAuditLog().saveToFile(filename);
+                    System.out.println("Audit log saved to " + filename);
+                } catch (Exception e) {
+                    System.out.println("Error: " + e.getMessage());
+                }
+            }
         });
 
         parser.registerCommand("stats", "Show system statistics", (scanner, sys) -> {
