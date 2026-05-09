@@ -23,6 +23,9 @@ public class CommandRegistryTest {
 
     @AfterEach
     void tearDown() {
+        if (system != null) {
+            system.shutdown();
+        }
         System.setOut(originalOut);
     }
 
@@ -49,6 +52,8 @@ public class CommandRegistryTest {
         assertTrue(output.contains("help"));
         assertTrue(output.contains("stats"));
         assertTrue(output.contains("exit"));
+        assertTrue(output.contains("scheduler-start"));
+        assertTrue(output.contains("scheduler-stop"));
     }
 
     @Test

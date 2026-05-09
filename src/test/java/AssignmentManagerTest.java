@@ -264,6 +264,22 @@ public class AssignmentManagerTest {
     }
 
     @Test
+    void testDeactivateExpiredTemporaryByScheduler() {
+        AssignmentMetadata meta = AssignmentMetadata.now("admin", "Test");
+        TemporaryAssignment assignment = new TemporaryAssignment(
+                user1, role1, meta, "2020-01-01 00:00", false);
+        assignmentManager.add(assignment);
+
+        assertFalse(assignment.isActive());
+        assertEquals(1, assignmentManager.deactivateExpiredTemporaryByScheduler());
+
+        TemporaryAssignment stored = (TemporaryAssignment) assignmentManager
+                .findById(assignment.assignmentId()).get();
+        assertTrue(stored.isInactiveByScheduler());
+        assertEquals(0, assignmentManager.deactivateExpiredTemporaryByScheduler());
+    }
+
+    @Test
     void testExtendPermanentAssignment() {
         AssignmentMetadata meta = AssignmentMetadata.now("admin", "Test");
         PermanentAssignment assignment = new PermanentAssignment(user1, role1, meta);
