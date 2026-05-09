@@ -4,8 +4,8 @@ import java.time.temporal.ChronoUnit;
 
 public class TemporaryAssignment extends AbstractRoleAssignment {
 
-    private String expiresAt;
-    private boolean autoRenew;
+    private volatile String expiresAt;
+    private volatile boolean autoRenew;
 
     private static final DateTimeFormatter FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");

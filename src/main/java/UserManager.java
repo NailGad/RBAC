@@ -1,8 +1,9 @@
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class UserManager implements Repository<User> {
 
-    private final Map<String, User> usersByUsername = new HashMap<>();
+    private final Map<String, User> usersByUsername = new ConcurrentHashMap<>();
 
     @Override
     public void add(User user) {
@@ -11,11 +12,9 @@ public class UserManager implements Repository<User> {
         }
 
         String username = user.username();
-        if (usersByUsername.containsKey(username)) {
+        if (usersByUsername.putIfAbsent(username, user) != null) {
             throw new IllegalArgumentException("User with username '" + username + "' already exists");
         }
-
-        usersByUsername.put(username, user);
     }
 
     @Override
@@ -98,16 +97,15 @@ public class UserManager implements Repository<User> {
         ValidationUtils.requireNonEmpty(username, "Username");
         username = ValidationUtils.normalizeString(username);
 
-        User existingUser = usersByUsername.get(username);
-        if (existingUser == null) {
-            throw new IllegalArgumentException("User with username '" + username + "' not found");
+        String normalizedUsername = username;
+        User newValue = usersByUsername.computeIfPresent(normalizedUsername, (key, existingUser) -> {
+            String fullName = newFullName != null ? newFullName : existingUser.fullName();
+            String email = newEmail != null ? newEmail : existingUser.email();
+            return User.create(normalizedUsername, fullName, email);
+        });
+        if (newValue == null) {
+            throw new IllegalArgumentException("User with username '" + normalizedUsername + "' not found");
         }
-
-        String fullName = newFullName != null ? newFullName : existingUser.fullName();
-        String email = newEmail != null ? newEmail : existingUser.email();
-
-        User updatedUser = User.create(username, fullName, email);
-        usersByUsername.put(username, updatedUser);
     }
 
     @Override

@@ -1,4 +1,5 @@
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Role {
     private final String id;
@@ -11,7 +12,7 @@ public class Role {
         this.id = "role_" + UUID.randomUUID().toString();
         this.name = name;
         this.description = description;
-        this.permissions = new HashSet<>();
+        this.permissions = ConcurrentHashMap.newKeySet();
     }
 
 
